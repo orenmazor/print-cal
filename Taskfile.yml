@@ -1,0 +1,40 @@
+version: '3'
+
+tasks:
+  default:
+    cmds:
+      - cargo build
+
+  run:
+    cmds:
+      - cargo run
+
+  auth-token:
+    desc: Fetch a Google OAuth refresh token; set GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET or CLIENT_ID/SECRET first
+    cmds:
+      - |
+        python3 - <<'PY'
+        import os, urllib.parse
+        client_id = os.getenv('GOOGLE_CLIENT_ID') or os.getenv('CLIENT_ID')
+        if not client_id:
+            raise SystemExit('set GOOGLE_CLIENT_ID or CLIENT_ID')
+        params = urllib.parse.urlencode({
+            'client_id': client_id,
+            'redirect_uri': 'http://127.0.0.1:8080',
+            'response_type': 'code',
+            'scope': 'https://www.googleapis.com/auth/calendar.readonly',
+            'access_type': 'offline',
+            'prompt': 'consent',
+        })
+        print('Open this URL, approve, then copy the code= value from the redirected URL:\n')
+        print('https://accounts.google.com/o/oauth2/v2/auth?' + params + '\n')
+        PY
+        printf 'Paste code: '
+        read code
+        curl -sS https://oauth2.googleapis.com/token \
+          -d client_id="${GOOGLE_CLIENT_ID:-$CLIENT_ID}" \
+          -d client_secret="${GOOGLE_CLIENT_SECRET:-$SECRET}" \
+          -d code="$code" \
+          -d grant_type=authorization_code \
+          -d redirect_uri=http://127.0.0.1:8080 \
+          | python3 -c 'import sys,json; data=json.load(sys.stdin); print(data.get("refresh_token") or data)'

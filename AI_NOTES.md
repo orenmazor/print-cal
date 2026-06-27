@@ -1,0 +1,5 @@
+- Keep the project under ~500 LOC if possible.
+- Favor readability over abstraction.
+- Don't introduce traits unless they're clearly needed.
+- Avoid macros except for serde derives.
+- Use one module until the code naturally needs splitting.
